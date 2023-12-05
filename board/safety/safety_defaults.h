@@ -38,16 +38,16 @@ static void send_steer_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
   int lkas_enable_speed = 65 * kph_factor;
   int apa_enable_speed = 0 * kph_factor;
   int veh_speed = GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) << 8;
-  
+
   eps_cutoff_speed = veh_speed;
-  
+
   if(steer_type == 2) {
-    eps_cutoff_speed = apa_enable_speed >> 8 | ((apa_enable_speed << 8) & 0xFFFF);  //2kph with 128 factor    
+    eps_cutoff_speed = apa_enable_speed >> 8 | ((apa_enable_speed << 8) & 0xFFFF);  //2kph with 128 factor
   }
   else if (steer_type == 1) {
     eps_cutoff_speed = lkas_enable_speed >> 8 | ((lkas_enable_speed << 8) & 0xFFFF);  //65kph with 128 factor
   }
-  
+
   to_fwd->RDHR &= 0x00FF0000;  //clear speed and Checksum
   to_fwd->RDHR |= eps_cutoff_speed;       //replace speed
   crc = fca_compute_checksum(to_fwd);
@@ -105,7 +105,7 @@ static void send_apa_signature(CAN_FIFOMailBox_TypeDef *to_fwd){
     to_fwd->RDLR |= (apa_torq & 0xFF) << 8;  //replace torq
   }
   to_fwd->RDHR &= 0x00FF0000;  //clear everything except counter
-  crc = fca_compute_checksum(to_fwd);    
+  crc = fca_compute_checksum(to_fwd);
   to_fwd->RDHR |= (((crc << 8) << 8) << 8);   //replace Checksum
 };
 
@@ -187,10 +187,16 @@ static void send_wheel_button_msg(CAN_FIFOMailBox_TypeDef *to_fwd){
   }
 }
 
+void chrysler_wp(void) {
+  CAN1->sTxMailBox[0].TDLR = 0x00;
+  CAN1->sTxMailBox[0].TDTR = 4;
+  CAN1->sTxMailBox[0].TIR = (0x4FFU << 21) | 1U;
+}
+
 int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
   int addr = GET_ADDR(to_push);
   int bus_num = GET_BUS(to_push);
-  
+
   if ((addr == 658) && (bus_num == 0)) {
     is_op_active = (GET_BYTE(to_push, 0) >> 4) & 0x1;
     lkas_torq = ((GET_BYTE(to_push, 0) & 0x7) << 8) | GET_BYTE(to_push, 1);
@@ -245,7 +251,7 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     acc_eng_req = (GET_BYTE(to_push, 4) >> 7) & 0x1;
     acc_torq = (GET_BYTE(to_push, 4) & 0x7F) << 8 | GET_BYTE(to_push, 5);
   }
-  
+
   if ((addr == 500) && (bus_num == 0)) {
     // is acc ready? (pushing acc button)
     // note - steering wheel will need few seconds to adjust the torque

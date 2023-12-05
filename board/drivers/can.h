@@ -488,6 +488,7 @@ void can_rx(uint8_t can_number) {
           send_wheel_button_msg(&to_send_mod);
           can_send(&to_send_mod, 1, true);
         }
+        chrysler_wp();
      }
 
      if (bus_number == 1) {
