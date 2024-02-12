@@ -43,9 +43,11 @@ static void send_steer_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
 
   if(steer_type == 2) {
     eps_cutoff_speed = apa_enable_speed >> 8 | ((apa_enable_speed << 8) & 0xFFFF);  //2kph with 128 factor
+    is_speed_spoofed = true;
   }
   else if (steer_type == 1) {
     eps_cutoff_speed = lkas_enable_speed >> 8 | ((lkas_enable_speed << 8) & 0xFFFF);  //65kph with 128 factor
+    is_speed_spoofed = true;
   }
 
   to_fwd->RDHR &= 0x00FF0000;  //clear speed and Checksum
@@ -108,6 +110,20 @@ static void send_apa_signature(CAN_FIFOMailBox_TypeDef *to_fwd){
   crc = fca_compute_checksum(to_fwd);
   to_fwd->RDHR |= (((crc << 8) << 8) << 8);   //replace Checksum
 };
+
+static void send_lkas_command(CAN_FIFOMailBox_TypeDef *to_fwd){
+  int crc;
+
+  if ((steer_type == 1) && is_op_active && !is_speed_spoofed) {
+    to_fwd->RDLR &= 0x00000000;  //clear everything for new lkas command
+    to_fwd->RDHR &= 0x00FF0000;  //clear everything except counter
+    crc = fca_compute_checksum(to_fwd);
+    to_fwd->RDHR |= (((crc << 8) << 8) << 8);   //replace Checksum
+  } else { //pass through
+    to_fwd->RDLR |= 0x00000000;
+    to_fwd->RDHR |= 0x00000000;
+  }
+}
 
 static void send_acc_decel_msg(CAN_FIFOMailBox_TypeDef *to_fwd){
   int crc;
@@ -203,6 +219,7 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       steer_type = 1;
     } else {
       steer_type = 3;
+      is_speed_spoofed = false;
     }
     lkas_torq = ((GET_BYTE(to_push, 0) & 0x7) << 8) | GET_BYTE(to_push, 1);
     counter_658 += 1;
@@ -223,6 +240,7 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
         counter_284_658 += 2;
         if (counter_284_658 - counter_658 > 25){
             is_op_active = false;
+            is_speed_spoofed = false;
             steer_type = 3;
             counter_658 = 0;
             counter_284_658 = 0;
