@@ -54,6 +54,13 @@ static void send_steer_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
     }
     counter_speed_spoofed = counter_speed_spoofed + 1;
   }
+  else {
+    if (actual_speed < lkas_enable_speed) {
+      counter_speed_spoofed = 0;
+    } else {
+      counter_speed_spoofed = counter_speed_spoofed + 1;
+    }
+  }
 
   to_fwd->RDHR &= 0x00FF0000;  //clear speed and Checksum
   to_fwd->RDHR |= eps_cutoff_speed;       //replace speed
@@ -225,7 +232,6 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       steer_type = 1;
     } else {
       steer_type = 3;
-      counter_speed_spoofed = 0;
     }
     lkas_torq = ((GET_BYTE(to_push, 0) & 0x7) << 8) | GET_BYTE(to_push, 1);
     counter_658 += 1;
@@ -246,7 +252,6 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
         counter_284_658 += 2;
         if (counter_284_658 - counter_658 > 25){
             is_op_active = false;
-            counter_speed_spoofed = 0;
             steer_type = 3;
             counter_658 = 0;
             counter_284_658 = 0;
