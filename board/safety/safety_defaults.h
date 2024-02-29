@@ -238,6 +238,10 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
   }
 
   if ((addr == 284) && (bus_num == 0)) {
+    // the following two conditions are to stop spoofing
+    // when comma stops sending LKAS or ACC commands for whatever reason
+    // 284 is sent by the vehicle, and 502/658 is sent by comma,
+    // and they are sent in the same frequency (50Hz)
     if (counter_502 > 0) {
         counter_284_502 += 1;
         if (counter_284_502 - counter_502 > 25) {
@@ -249,7 +253,7 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     }
 
     if (counter_658 > 0) {
-        counter_284_658 += 2;
+        counter_284_658 += 1;
         if (counter_284_658 - counter_658 > 25){
             is_op_active = false;
             steer_type = 3;
