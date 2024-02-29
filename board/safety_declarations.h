@@ -108,6 +108,8 @@ bool is_op_active = false;
 int lkas_torq = 1024;
 int steer_type = 3;
 uint32_t counter_speed_spoofed = 0;
+uint32_t speed_spoofed_threshold = 5;
+bool is_lkas_ready = false;
 
 bool is_oplong_enabled = false;
 int acc_set_speed_kph = 255;

@@ -46,19 +46,36 @@ static void send_steer_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
     if (actual_speed < apa_enable_speed) {
       eps_cutoff_speed = apa_enable_speed >> 8 | ((apa_enable_speed << 8) & 0xFFFF);  //2kph with 128 factor
     }
-    counter_speed_spoofed = counter_speed_spoofed + 1;
+    if (!is_lkas_ready && counter_speed_spoofed >= speed_spoofed_threshold) {
+      is_lkas_ready = true;
+    } else {
+      counter_speed_spoofed = counter_speed_spoofed + 1;
+    }
   }
   else if (steer_type == 1) {
     if (actual_speed < lkas_enable_speed) {
       eps_cutoff_speed = lkas_enable_speed >> 8 | ((lkas_enable_speed << 8) & 0xFFFF);  //65kph with 128 factor
     }
     counter_speed_spoofed = counter_speed_spoofed + 1;
+    if (!is_lkas_ready && counter_speed_spoofed >= speed_spoofed_threshold) {
+      is_lkas_ready = true;
+    }
   }
   else {
     if (actual_speed < lkas_enable_speed) {
+      is_lkas_ready = false;
       counter_speed_spoofed = 0;
+      if (actual_speed < 5 * kph_factor) {
+        speed_spoofed_threshold = 50;
+      } else if (actual_speed < 15 * kph_factor) {
+        speed_spoofed_threshold = 25;
+      } else if (actual_speed < 25 * kph_factor) {
+        speed_spoofed_threshold = 10;
+      } else {
+        speed_spoofed_threshold = 5;
+      }
     } else {
-      counter_speed_spoofed = counter_speed_spoofed + 1;
+      is_lkas_ready = true;
     }
   }
 
@@ -125,8 +142,9 @@ static void send_apa_signature(CAN_FIFOMailBox_TypeDef *to_fwd){
 
 static void send_lkas_command(CAN_FIFOMailBox_TypeDef *to_fwd){
   int crc;
+  bool lkas_active = (GET_BYTE(to_fwd, 0) >> 4) & 0x1;
 
-  if ((steer_type == 1) && is_op_active && counter_speed_spoofed < 5) {
+  if (lkas_active && !is_lkas_ready) {
     to_fwd->RDLR &= 0x00000000; // clear everything for new lkas command
     to_fwd->RDLR |= 0x00000004; // make sure torque highest bit is 1
     to_fwd->RDHR &= 0x000000FF; // clear everything except counter
