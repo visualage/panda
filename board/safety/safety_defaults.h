@@ -66,9 +66,11 @@ static void send_steer_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
       is_lkas_ready = false;
       counter_speed_spoofed = 0;
       if (actual_speed < 5 * kph_factor) {
-        speed_spoofed_threshold = 50;
+        speed_spoofed_threshold = 35;
+      } else if (actual_speed < 10 * kph_factor) {
+        speed_spoofed_threshold = 30;
       } else if (actual_speed < 15 * kph_factor) {
-        speed_spoofed_threshold = 25;
+        speed_spoofed_threshold = 20;
       } else if (actual_speed < 25 * kph_factor) {
         speed_spoofed_threshold = 10;
       } else {
