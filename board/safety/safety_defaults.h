@@ -229,8 +229,8 @@ static void send_wheel_button_msg(CAN_FIFOMailBox_TypeDef *to_fwd){
     if (org_acc_available) {
         to_fwd->RDLR |= 0x80; // send acc button to remove acc available status
     }
-  crc = fca_compute_checksum(to_fwd);
-  to_fwd->RDLR |= ((crc << 8) << 8);   //replace Checksum
+    crc = fca_compute_checksum(to_fwd);
+    to_fwd->RDLR |= ((crc << 8) << 8);   //replace Checksum
   }
   else { //pass through
     to_fwd->RDLR |= 0x00000000;
