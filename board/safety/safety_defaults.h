@@ -71,6 +71,8 @@ static void send_steer_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
         speed_spoofed_threshold = 30;
       } else if (actual_speed < 15 * kph_factor) {
         speed_spoofed_threshold = 20;
+      } else if (actual_speed < 20 * kph_factor) {
+        speed_spoofed_threshold = 15;
       } else if (actual_speed < 25 * kph_factor) {
         speed_spoofed_threshold = 10;
       } else {
